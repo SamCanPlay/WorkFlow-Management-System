@@ -1,0 +1,974 @@
+Demo prompt
+
+On this folder i am to work on my new flutter app project for destop side for workflow management system can you create the require files?
+
+pubspec.yaml dependencies
+dependencies:
+  flutter:
+    sdk: flutter
+  go_router: ^14.2.7
+  intl: ^0.19.0
+
+
+lib/
+ ├─ main.dart
+ ├─ app_router.dart
+ ├─ data/
+ │   ├─ demo_data.dart
+ │   └─ models.dart
+ ├─ layout/
+ │   ├─ app_shell.dart
+ │   ├─ sidebar.dart
+ │   └─ topbar.dart
+ ├─ pages/
+ │   ├─ dashboard_page.dart
+ │   ├─ projects_page.dart
+ │   └─ project_details_page.dart
+ └─ widgets/
+     ├─ project_tile.dart
+     └─ kpi_chip.dart
+
+
+
+lib/main.dart
+import 'package:flutter/material.dart';
+import 'app_router.dart';
+
+void main() {
+  runApp(const BuilderFlowApp());
+}
+
+class BuilderFlowApp extends StatelessWidget {
+  const BuilderFlowApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp.router(
+      debugShowCheckedModeBanner: false,
+      title: 'BuilderFlow',
+      theme: ThemeData(
+        useMaterial3: true,
+        colorSchemeSeed: Colors.blue,
+        scaffoldBackgroundColor: const Color(0xFFF6F8FB),
+      ),
+      routerConfig: appRouter,
+    );
+  }
+}
+
+
+lib/app_router.dart
+import 'package:go_router/go_router.dart';
+
+import 'layout/app_shell.dart';
+import 'pages/dashboard_page.dart';
+import 'pages/projects_page.dart';
+import 'pages/project_details_page.dart';
+
+final appRouter = GoRouter(
+  initialLocation: '/dashboard',
+  routes: [
+    ShellRoute(
+      builder: (context, state, child) => AppShell(child: child),
+      routes: [
+        GoRoute(
+          path: '/dashboard',
+          builder: (context, state) => const DashboardPage(),
+        ),
+        GoRoute(
+          path: '/projects',
+          builder: (context, state) => const ProjectsPage(),
+        ),
+        GoRoute(
+          path: '/projects/:id',
+          builder: (context, state) {
+            final id = state.pathParameters['id']!;
+            return ProjectDetailsPage(projectId: id);
+          },
+        ),
+      ],
+    ),
+  ],
+);
+
+
+lib/data/models.dart
+class Project {
+  final String id;
+  final String name;
+  final String site;
+  final String status; // planned / ongoing / on-hold / completed
+  final double progress; // 0 to 1
+  final int delayDays;
+  final int todaysTasks;
+
+  // finance
+  final int duePayments;
+  final int receivedPayments;
+  final int pendingApprovals;
+
+  // materials
+  final int lowStockItems;
+  final int delayedDeliveries;
+
+  // labour
+  final int labourPresent;
+  final int labourAbsent;
+
+  // alerts
+  final int criticalAlerts;
+
+  // health
+  final String costHealth; // Good / Warning / Critical
+  final String timelineHealth;
+
+  const Project({
+    required this.id,
+    required this.name,
+    required this.site,
+    required this.status,
+    required this.progress,
+    required this.delayDays,
+    required this.todaysTasks,
+    required this.duePayments,
+    required this.receivedPayments,
+    required this.pendingApprovals,
+    required this.lowStockItems,
+    required this.delayedDeliveries,
+    required this.labourPresent,
+    required this.labourAbsent,
+    required this.criticalAlerts,
+    required this.costHealth,
+    required this.timelineHealth,
+  });
+}
+
+
+lib/data/demo_data.dart
+import 'models.dart';
+
+final demoProjects = <Project>[
+  const Project(
+    id: 'P001',
+    name: 'Palm Residency Tower A',
+    site: 'Navi Mumbai',
+    status: 'ongoing',
+    progress: 0.62,
+    delayDays: 4,
+    todaysTasks: 9,
+    duePayments: 3,
+    receivedPayments: 12,
+    pendingApprovals: 2,
+    lowStockItems: 4,
+    delayedDeliveries: 1,
+    labourPresent: 38,
+    labourAbsent: 5,
+    criticalAlerts: 2,
+    costHealth: 'Warning',
+    timelineHealth: 'Warning',
+  ),
+  const Project(
+    id: 'P002',
+    name: 'Skyline Villas Phase 2',
+    site: 'Pune',
+    status: 'planned',
+    progress: 0.12,
+    delayDays: 0,
+    todaysTasks: 3,
+    duePayments: 0,
+    receivedPayments: 2,
+    pendingApprovals: 1,
+    lowStockItems: 0,
+    delayedDeliveries: 0,
+    labourPresent: 11,
+    labourAbsent: 2,
+    criticalAlerts: 0,
+    costHealth: 'Good',
+    timelineHealth: 'Good',
+  ),
+  const Project(
+    id: 'P003',
+    name: 'Metro Commercial Complex',
+    site: 'Mumbai',
+    status: 'on-hold',
+    progress: 0.48,
+    delayDays: 12,
+    todaysTasks: 0,
+    duePayments: 5,
+    receivedPayments: 7,
+    pendingApprovals: 4,
+    lowStockItems: 6,
+    delayedDeliveries: 3,
+    labourPresent: 7,
+    labourAbsent: 18,
+    criticalAlerts: 6,
+    costHealth: 'Critical',
+    timelineHealth: 'Critical',
+  ),
+];
+
+
+Layout: Shell + Sidebar + Topbar
+lib/layout/app_shell.dart
+import 'package:flutter/material.dart';
+
+import 'sidebar.dart';
+import 'topbar.dart';
+
+class AppShell extends StatefulWidget {
+  final Widget child;
+  const AppShell({super.key, required this.child});
+
+  @override
+  State<AppShell> createState() => _AppShellState();
+}
+
+class _AppShellState extends State<AppShell> {
+  bool collapsed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Row(
+        children: [
+          Sidebar(
+            collapsed: collapsed,
+            onToggle: () => setState(() => collapsed = !collapsed),
+          ),
+          Expanded(
+            child: Column(
+              children: [
+                const TopBar(),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: widget.child,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+lib/layout/topbar.dart
+import 'package:flutter/material.dart';
+
+class TopBar extends StatelessWidget {
+  const TopBar({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      elevation: 0.3,
+      child: Container(
+        height: 64,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        color: Colors.white,
+        child: Row(
+          children: [
+            Text(
+              'BuilderFlow',
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: SizedBox(
+                height: 40,
+                child: TextField(
+                  decoration: InputDecoration(
+                    hintText: "Search projects, tasks, vendors...",
+                    prefixIcon: const Icon(Icons.search),
+                    filled: true,
+                    fillColor: const Color(0xFFF2F4F7),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+
+            // top-right profile/login button
+            PopupMenuButton(
+              tooltip: 'User Profile',
+              itemBuilder: (_) => [
+                const PopupMenuItem(value: 'profile', child: Text('Profile')),
+                const PopupMenuItem(value: 'logout', child: Text('Logout')),
+              ],
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 16,
+                    backgroundColor: Colors.blue.shade100,
+                    child: const Icon(Icons.person, size: 18),
+                  ),
+                  const SizedBox(width: 8),
+                  const Text('Sam'),
+                  const SizedBox(width: 4),
+                  const Icon(Icons.keyboard_arrow_down),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+lib/layout/sidebar.dart
+import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+
+class Sidebar extends StatelessWidget {
+  final bool collapsed;
+  final VoidCallback onToggle;
+
+  const Sidebar({super.key, required this.collapsed, required this.onToggle});
+
+  @override
+  Widget build(BuildContext context) {
+    final width = collapsed ? 76.0 : 240.0;
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      width: width,
+      color: const Color(0xFF0F172A),
+      child: Column(
+        children: [
+          const SizedBox(height: 8),
+          _sideHeader(context),
+          const Divider(color: Colors.white24, height: 1),
+
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.all(12),
+              children: [
+                _navItem(
+                  context,
+                  icon: Icons.dashboard_rounded,
+                  label: 'Dashboard',
+                  route: '/dashboard',
+                ),
+                _navItem(
+                  context,
+                  icon: Icons.apartment_rounded,
+                  label: 'Projects',
+                  route: '/projects',
+                ),
+
+                const SizedBox(height: 12),
+                const Divider(color: Colors.white24),
+
+                // Placeholder links for future pages
+                _navItem(context,
+                    icon: Icons.task_alt, label: 'Tasks', route: '/dashboard'),
+                _navItem(context,
+                    icon: Icons.calendar_month,
+                    label: 'Schedule',
+                    route: '/dashboard'),
+                _navItem(context,
+                    icon: Icons.groups, label: 'Labour', route: '/dashboard'),
+                _navItem(context,
+                    icon: Icons.inventory_2,
+                    label: 'Materials',
+                    route: '/dashboard'),
+                _navItem(context,
+                    icon: Icons.local_shipping,
+                    label: 'Vendors',
+                    route: '/dashboard'),
+                _navItem(context,
+                    icon: Icons.account_balance_wallet,
+                    label: 'Finance',
+                    route: '/dashboard'),
+                _navItem(context,
+                    icon: Icons.verified, label: 'Approvals', route: '/dashboard'),
+                _navItem(context,
+                    icon: Icons.folder, label: 'Documents', route: '/dashboard'),
+                _navItem(context,
+                    icon: Icons.analytics, label: 'Reports', route: '/dashboard'),
+                _navItem(context,
+                    icon: Icons.forum, label: 'Communication', route: '/dashboard'),
+                _navItem(context,
+                    icon: Icons.settings, label: 'Settings', route: '/dashboard'),
+              ],
+            ),
+          ),
+
+          // bottom-left placeholder button
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                icon: const Icon(Icons.add),
+                label: collapsed ? const SizedBox.shrink() : const Text("New"),
+                onPressed: () {},
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _sideHeader(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(12),
+      child: Row(
+        children: [
+          const Icon(Icons.grid_view_rounded, color: Colors.white),
+          if (!collapsed) ...[
+            const SizedBox(width: 10),
+            const Expanded(
+              child: Text(
+                'Navigation',
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+              ),
+            ),
+          ],
+          IconButton(
+            onPressed: onToggle,
+            icon: Icon(
+              collapsed ? Icons.chevron_right : Icons.chevron_left,
+              color: Colors.white70,
+            ),
+          )
+        ],
+      ),
+    );
+  }
+
+  Widget _navItem(BuildContext context,
+      {required IconData icon, required String label, required String route}) {
+    final isActive = GoRouterState.of(context).uri.toString() == route;
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: () => context.go(route),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        margin: const EdgeInsets.only(bottom: 6),
+        decoration: BoxDecoration(
+          color: isActive ? Colors.white12 : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: Colors.white70),
+            if (!collapsed) ...[
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  label,
+                  style: const TextStyle(color: Colors.white70),
+                ),
+              ),
+            ]
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+Dashboard + Project Tiles
+lib/pages/dashboard_page.dart
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:go_router/go_router.dart';
+
+import '../data/demo_data.dart';
+import '../widgets/project_tile.dart';
+
+class DashboardPage extends StatefulWidget {
+  const DashboardPage({super.key});
+
+  @override
+  State<DashboardPage> createState() => _DashboardPageState();
+}
+
+class _DashboardPageState extends State<DashboardPage> {
+  String? selectedProjectId;
+  String? selectedSite;
+  DateTimeRange? dateRange;
+
+  @override
+  Widget build(BuildContext context) {
+    final sites = demoProjects.map((p) => p.site).toSet().toList();
+
+    final filtered = demoProjects.where((p) {
+      final okProject = selectedProjectId == null || p.id == selectedProjectId;
+      final okSite = selectedSite == null || p.site == selectedSite;
+      return okProject && okSite;
+    }).toList();
+
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "Dashboard",
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+          ),
+          const SizedBox(height: 12),
+
+          // Filters row
+          Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            children: [
+              _filterProject(),
+              _filterSite(sites),
+              _filterDateRange(),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // grid tiles
+          LayoutBuilder(
+            builder: (context, c) {
+              final w = c.maxWidth;
+              final crossAxisCount = w > 1200 ? 3 : (w > 900 ? 2 : 1);
+
+              return GridView.builder(
+                physics: const NeverScrollableScrollPhysics(),
+                shrinkWrap: true,
+                itemCount: filtered.length,
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: crossAxisCount,
+                  crossAxisSpacing: 16,
+                  mainAxisSpacing: 16,
+                  childAspectRatio: 1.6,
+                ),
+                itemBuilder: (context, i) {
+                  final project = filtered[i];
+                  return ProjectTile(
+                    project: project,
+                    onTap: () => context.go('/projects/${project.id}'),
+                  );
+                },
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _filterProject() {
+    return _filterCard(
+      child: DropdownButtonFormField<String>(
+        value: selectedProjectId,
+        decoration: const InputDecoration(
+          labelText: 'Project',
+          border: OutlineInputBorder(),
+        ),
+        items: [
+          const DropdownMenuItem(value: null, child: Text('All Projects')),
+          ...demoProjects.map(
+            (p) => DropdownMenuItem(value: p.id, child: Text('${p.id} • ${p.name}')),
+          )
+        ],
+        onChanged: (v) => setState(() => selectedProjectId = v),
+      ),
+    );
+  }
+
+  Widget _filterSite(List<String> sites) {
+    return _filterCard(
+      child: DropdownButtonFormField<String>(
+        value: selectedSite,
+        decoration: const InputDecoration(
+          labelText: 'Site',
+          border: OutlineInputBorder(),
+        ),
+        items: [
+          const DropdownMenuItem(value: null, child: Text('All Sites')),
+          ...sites.map((s) => DropdownMenuItem(value: s, child: Text(s))),
+        ],
+        onChanged: (v) => setState(() => selectedSite = v),
+      ),
+    );
+  }
+
+  Widget _filterDateRange() {
+    final label = dateRange == null
+        ? "Select date range"
+        : "${DateFormat('dd MMM').format(dateRange!.start)} - ${DateFormat('dd MMM').format(dateRange!.end)}";
+
+    return _filterCard(
+      child: SizedBox(
+        width: 260,
+        child: OutlinedButton.icon(
+          icon: const Icon(Icons.date_range),
+          label: Text(label),
+          onPressed: () async {
+            final picked = await showDateRangePicker(
+              context: context,
+              firstDate: DateTime(2020),
+              lastDate: DateTime(2100),
+            );
+            if (picked != null) setState(() => dateRange = picked);
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _filterCard({required Widget child}) {
+    return SizedBox(
+      width: 280,
+      child: Card(
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: child,
+        ),
+      ),
+    );
+  }
+}
+
+lib/widgets/project_tile.dart
+import 'package:flutter/material.dart';
+import '../data/models.dart';
+import 'kpi_chip.dart';
+
+class ProjectTile extends StatelessWidget {
+  final Project project;
+  final VoidCallback onTap;
+
+  const ProjectTile({super.key, required this.project, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(16),
+      onTap: onTap,
+      child: Card(
+        elevation: 0.5,
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // header
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      project.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Chip(
+                    label: Text(project.status),
+                    backgroundColor: const Color(0xFFF2F4F7),
+                  )
+                ],
+              ),
+              Text('${project.id} • ${project.site}',
+                  style: Theme.of(context).textTheme.bodySmall),
+              const SizedBox(height: 10),
+
+              // progress
+              Row(
+                children: [
+                  Expanded(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(999),
+                      child: LinearProgressIndicator(
+                        value: project.progress,
+                        minHeight: 10,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Text('${(project.progress * 100).round()}%'),
+                ],
+              ),
+              const SizedBox(height: 10),
+
+              // required summary items
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  // Active project summary
+                  KpiChip(
+                      icon: Icons.schedule,
+                      label: 'Delay: ${project.delayDays}d'),
+                  KpiChip(
+                      icon: Icons.task_alt,
+                      label: "Today tasks: ${project.todaysTasks}"),
+
+                  // Payment tracker
+                  KpiChip(
+                      icon: Icons.payments_outlined,
+                      label: "Due: ${project.duePayments}"),
+                  KpiChip(
+                      icon: Icons.check_circle_outline,
+                      label: "Received: ${project.receivedPayments}"),
+                  KpiChip(
+                      icon: Icons.approval_outlined,
+                      label: "Pending approvals: ${project.pendingApprovals}"),
+
+                  // Material status
+                  KpiChip(
+                      icon: Icons.inventory_2_outlined,
+                      label: "Low stock: ${project.lowStockItems}"),
+                  KpiChip(
+                      icon: Icons.local_shipping_outlined,
+                      label: "Delayed: ${project.delayedDeliveries}"),
+
+                  // Labour attendance
+                  KpiChip(
+                      icon: Icons.groups,
+                      label:
+                          "Labour P/A: ${project.labourPresent}/${project.labourAbsent}"),
+
+                  // critical alerts
+                  if (project.criticalAlerts > 0)
+                    KpiChip(
+                      icon: Icons.warning_amber_rounded,
+                      label: "Alerts: ${project.criticalAlerts}",
+                      danger: true,
+                    ),
+                ],
+              )
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+lib/widgets/kpi_chip.dart
+import 'package:flutter/material.dart';
+
+class KpiChip extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool danger;
+
+  const KpiChip({
+    super.key,
+    required this.icon,
+    required this.label,
+    this.danger = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final bg = danger ? Colors.red.withOpacity(0.08) : const Color(0xFFF2F4F7);
+    final fg = danger ? Colors.red : const Color(0xFF334155);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: fg),
+          const SizedBox(width: 6),
+          Text(label, style: TextStyle(color: fg, fontSize: 12)),
+        ],
+      ),
+    );
+  }
+}
+
+Projects Module (table view)
+lib/pages/projects_page.dart
+import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+
+import '../data/demo_data.dart';
+
+class ProjectsPage extends StatelessWidget {
+  const ProjectsPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          "Projects",
+          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+        ),
+        const SizedBox(height: 12),
+        Expanded(
+          child: Card(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(12),
+              scrollDirection: Axis.horizontal,
+              child: DataTable(
+                columns: const [
+                  DataColumn(label: Text('ID')),
+                  DataColumn(label: Text('Project')),
+                  DataColumn(label: Text('Site')),
+                  DataColumn(label: Text('Status')),
+                  DataColumn(label: Text('Progress')),
+                  DataColumn(label: Text('Cost Health')),
+                  DataColumn(label: Text('Timeline Health')),
+                ],
+                rows: demoProjects.map((p) {
+                  return DataRow(
+                    onSelectChanged: (_) => context.go('/projects/${p.id}'),
+                    cells: [
+                      DataCell(Text(p.id)),
+                      DataCell(Text(p.name)),
+                      DataCell(Text(p.site)),
+                      DataCell(Text(p.status)),
+                      DataCell(Text('${(p.progress * 100).round()}%')),
+                      DataCell(Text(p.costHealth)),
+                      DataCell(Text(p.timelineHealth)),
+                    ],
+                  );
+                }).toList(),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+Project Details Page (tabs)
+lib/pages/project_details_page.dart
+import 'package:flutter/material.dart';
+import '../data/demo_data.dart';
+import '../data/models.dart';
+
+class ProjectDetailsPage extends StatefulWidget {
+  final String projectId;
+  const ProjectDetailsPage({super.key, required this.projectId});
+
+  @override
+  State<ProjectDetailsPage> createState() => _ProjectDetailsPageState();
+}
+
+class _ProjectDetailsPageState extends State<ProjectDetailsPage>
+    with TickerProviderStateMixin {
+  late TabController tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    tabController = TabController(length: 11, vsync: this);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final Project project =
+        demoProjects.firstWhere((p) => p.id == widget.projectId);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // header
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                "${project.name} (${project.id})",
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+              ),
+            ),
+            Chip(label: Text(project.status)),
+          ],
+        ),
+        Text("Site: ${project.site}", style: Theme.of(context).textTheme.bodySmall),
+        const SizedBox(height: 12),
+
+        // tabs
+        Card(
+          child: TabBar(
+            controller: tabController,
+            isScrollable: true,
+            tabAlignment: TabAlignment.start,
+            tabs: const [
+              Tab(text: 'Overview'),
+              Tab(text: 'Schedule'),
+              Tab(text: 'Tasks'),
+              Tab(text: 'Materials'),
+              Tab(text: 'Labour'),
+              Tab(text: 'Expenses'),
+              Tab(text: 'Photos'),
+              Tab(text: 'Approvals'),
+              Tab(text: 'Documents'),
+              Tab(text: 'Payments'),
+              Tab(text: 'Notes/Logs'),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+
+        Expanded(
+          child: Card(
+            child: TabBarView(
+              controller: tabController,
+              children: [
+                _placeholder('Overview'),
+                _placeholder('Schedule (Gantt / Calendar placeholder)'),
+                _placeholder('Tasks'),
+                _placeholder('Materials'),
+                _placeholder('Labour'),
+                _placeholder('Expenses'),
+                _placeholder('Photos / Site updates'),
+                _placeholder('Approvals'),
+                _placeholder('Documents'),
+                _placeholder('Payments / Invoices'),
+                _placeholder('Notes / Logs'),
+              ],
+            ),
+          ),
+        )
+      ],
+    );
+  }
+
+  Widget _placeholder(String title) {
+    return Center(
+      child: Text(
+        title,
+        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+      ),
+    );
+  }
+}
+
+Make sure to implement the following changes
